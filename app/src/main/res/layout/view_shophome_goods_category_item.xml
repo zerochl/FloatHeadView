@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="66dp"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="3dp"
+            android:layout_height="40dp"
+            android:background="@drawable/shophome_goods_category_line"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="4dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="66dp"
+            android:text="鸡尾酒"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:id="@+id/shophome_goods_category_name"
+            android:textColor="@android:color/black"/>
+
+    </LinearLayout>
+</LinearLayout>

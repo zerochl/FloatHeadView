@@ -7,5 +7,7 @@
     <color name="shadow_bg">#66000000</color>
     <color name="edit_bg">#EFEFF4</color>
     <color name="darker_gray">#9b9b9b</color>
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
 
 </resources>

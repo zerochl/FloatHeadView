@@ -136,10 +136,20 @@ public class ContactModel {
     public static class MembersEntity {
 
         private String id;
+        private long headId;
 
         private String username;
 
         private String profession;
+
+        public void setHeadId(long headId) {
+            this.headId = headId;
+        }
+
+        public long getHeadId() {
+
+            return headId;
+        }
 
         public String getSortLetters() {
             return sortLetters;

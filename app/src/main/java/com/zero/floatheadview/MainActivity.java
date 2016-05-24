@@ -1,12 +1,16 @@
 package com.zero.floatheadview;
 
+import android.graphics.PointF;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +23,8 @@ import com.zero.floatheadview.model.ContactModel;
 import com.zero.floatheadview.pinyin.CharacterParser;
 import com.zero.floatheadview.pinyin.PinyinComparator;
 import com.zero.floatheadview.widget.DividerDecoration;
+import com.zero.floatheadview.widget.MyLinearLayoutManager;
+import com.zero.floatheadview.widget.MyLinearSmoothScroller;
 import com.zero.floatheadview.widget.SideBar;
 import com.zero.floatheadview.widget.TouchableRecyclerView;
 
@@ -35,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
     private SideBar mSideBar;
     private TextView mUserDialog;
     private TouchableRecyclerView mRecyclerView;
+    private ViewGroup blockCategoryContainer;
+    private ScrollView scrollView;
 
     ContactModel mModel;
     private List<ContactModel.MembersEntity> mMembers = new ArrayList<>();
@@ -65,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
         mSideBar = (SideBar) findViewById(R.id.contact_sidebar);
         mUserDialog = (TextView) findViewById(R.id.contact_dialog);
         mRecyclerView = (TouchableRecyclerView) findViewById(R.id.contact_member);
+        blockCategoryContainer = (ViewGroup)findViewById(R.id.shophome_goods_category_container);
+        scrollView = (ScrollView)findViewById(R.id.shophome_goods_category_scrollview);
         mSideBar.setTextView(mUserDialog);
 
 
@@ -90,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-
+    private MyLinearLayoutManager layoutManager;
     private void setUI() {
 
         mSideBar.setOnTouchingLetterChangedListener(new SideBar.OnTouchingLetterChangedListener() {
@@ -100,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mAdapter != null) {
                     mAdapter.closeOpenedSwipeItemLayoutWithAnim();
                 }
-                int position = mAdapter.getPositionForSection(s.charAt(0));
+                int position = mAdapter.getPositionForSectionByName(s);
                 if (position != -1) {
                     mRecyclerView.scrollToPosition(position);
                 }
@@ -108,12 +118,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         seperateLists(mModel);
-
+        initCategoryView();
         if (mAdapter == null) {
             mAdapter = new ContactAdapter(this, mAllLists, mPermission, mModel.getCreater().getId());
             int orientation = LinearLayoutManager.VERTICAL;
-            final LinearLayoutManager layoutManager = new LinearLayoutManager(this, orientation, false);
+            layoutManager = new MyLinearLayoutManager(this, orientation, false);
+            layoutManager.setSmoothScrollerListener(smoothScrollerListener);
             mRecyclerView.setLayoutManager(layoutManager);
+//            layoutManager.setReverseLayout(true);
 
             mRecyclerView.setAdapter(mAdapter);
             final StickyRecyclerHeadersDecoration headersDecor = new StickyRecyclerHeadersDecoration(mAdapter);
@@ -121,6 +133,10 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onHeadViewChangeListener(View headView) {
                     Log.e("HongLi","更新HeadView：" + ((TextView)((LinearLayout)headView).getChildAt(0)).getText().toString());
+                    if(!canChangeCategory){
+                        return;
+                    }
+                    changeCategory(((TextView)((LinearLayout)headView).getChildAt(0)).getText().toString());
                 }
             });
             mRecyclerView.addItemDecoration(headersDecor);
@@ -137,18 +153,90 @@ public class MainActivity extends AppCompatActivity {
             mAdapter.notifyDataSetChanged();
         }
 
-        mSideBar.setVisibility(View.GONE);
     }
+    private ArrayList<String> categoryNameList = new ArrayList<>();
+    private void initCategoryView(){
+        for(ContactModel.MembersEntity member : mAllLists){
+            if(!categoryNameList.contains(member.getSortLetters())){
+                categoryNameList.add(member.getSortLetters());
+            }
+        }
+        View itemView;
+        TextView textView;
+        for(String name : categoryNameList){
+            itemView = LayoutInflater.from(this).inflate(R.layout.view_shophome_goods_category_item,null);
+            textView = (TextView)itemView.findViewById(R.id.shophome_goods_category_name);
+            textView.setText(name);
+            itemView.setTag(name);
+            itemView.setOnClickListener(onClickListener);
+            blockCategoryContainer.addView(itemView);
+        }
+    }
+    private boolean canChangeCategory = true;
+    private View.OnClickListener onClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            if(view instanceof  LinearLayout){
+                int position = mAdapter.getPositionForSectionByName(view.getTag().toString());
+                PointF pointf = layoutManager.computeScrollVectorForPosition(position);
+//                layoutManager.smoothScrollToPosition(mRecyclerView,null,pointf.y < 0 ? position > 0 ? position + 1 : position : position);
+                layoutManager.smoothScrollToPosition(mRecyclerView,null,position);
+                canChangeCategory = false;
+                changeCategory(view.getTag().toString());
+                //延迟一秒，用于防止滚动造成的HeadView改变,如果可以监控View的滑动开始于结束可以不用此方式
+                mRecyclerView.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        canChangeCategory  = true;
+                    }
+                },1000);
+            }
+        }
+    };
+
+    private void changeCategory(String newCategoryName){
+        int childSize = blockCategoryContainer.getChildCount();
+        for(int i = 0;i < childSize;i++){
+            if(newCategoryName.equals(blockCategoryContainer.getChildAt(i).getTag().toString())){
+                blockCategoryContainer.getChildAt(i).setBackgroundColor(getResources().getColor(R.color.white));
+//                if(canChangeCategory){
+//                    scrollView.smoothScrollTo(0,(int)blockCategoryContainer.getChildAt(i).getY());
+//                }
+                scrollView.smoothScrollTo(0,(int)blockCategoryContainer.getChildAt(i).getY());
+//                if(scrollView.getScrollY() <= blockCategoryContainer.getChildAt(i).getY() && scrollView.getScrollY() + scrollView.getMeasuredHeight() >= blockCategoryContainer.getChildAt(i).getY()){
+//
+//                }else{
+//                    scrollView.smoothScrollTo(0,(int)blockCategoryContainer.getChildAt(i).getY());
+//                }
+            }else{
+                blockCategoryContainer.getChildAt(i).setBackgroundColor(getResources().getColor(R.color.black));
+            }
+        }
+    }
+
+    private MyLinearSmoothScroller.SmoothScrollerListener smoothScrollerListener = new MyLinearSmoothScroller.SmoothScrollerListener() {
+        @Override
+        public void onStart() {
+//            canChangeCategory = false;
+        }
+
+        @Override
+        public void onStop() {
+//            canChangeCategory = true;
+        }
+    };
 
     private void seperateLists(ContactModel mModel) {
         //群主
+        int headId = 0;
         ContactModel.CreaterEntity creatorEntity = mModel.getCreater();
         ContactModel.MembersEntity tempMember = new ContactModel.MembersEntity();
         tempMember.setUsername(creatorEntity.getUsername());
         tempMember.setId(creatorEntity.getId());
         tempMember.setProfession(creatorEntity.getProfession());
-        tempMember.setSortLetters("$");
-
+        tempMember.setSortLetters("群主");
+        tempMember.setHeadId(headId);
+        headId++;
         mAllLists.add(tempMember);
 
 
@@ -157,10 +245,11 @@ public class MainActivity extends AppCompatActivity {
         if (mModel.getAdmins() != null && mModel.getAdmins().size() > 0) {
             for (ContactModel.AdminsEntity e : mModel.getAdmins()) {
                 ContactModel.MembersEntity eMember = new ContactModel.MembersEntity();
-                eMember.setSortLetters("%");
+                eMember.setSortLetters("管理员");
                 eMember.setProfession(e.getProfession());
                 eMember.setUsername(e.getUsername());
                 eMember.setId(e.getId());
+                eMember.setHeadId(headId);
                 mAllLists.add(eMember);
             }
         }
@@ -179,6 +268,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     entity.setSortLetters("#");
                 }
+                entity.setHeadId(sortString.charAt(0));
                 mMembers.add(entity);
             }
             Collections.sort(mMembers, pinyinComparator);

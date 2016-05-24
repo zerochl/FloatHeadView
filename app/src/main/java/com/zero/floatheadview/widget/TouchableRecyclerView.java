@@ -101,4 +101,6 @@ public class TouchableRecyclerView extends RecyclerView {
         if (getAdapter() != null)
             ((ContactAdapter) getAdapter()).closeOpenedSwipeItemLayoutWithAnim();
     }
+
+
 }

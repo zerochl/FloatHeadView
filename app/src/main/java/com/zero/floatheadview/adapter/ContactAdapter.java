@@ -168,7 +168,8 @@ public class ContactAdapter extends BaseAdapter<ContactAdapter.ContactViewHolder
     @Override
     public long getHeaderId(int position) {
 
-        return getItem(position).getSortLetters().charAt(0);
+//        return getItem(position).getSortLetters().charAt(0);
+        return getItem(position).getHeadId();
 
     }
 
@@ -184,24 +185,35 @@ public class ContactAdapter extends BaseAdapter<ContactAdapter.ContactViewHolder
     public void onBindHeaderViewHolder(RecyclerView.ViewHolder holder, int position) {
         LinearLayout root = (LinearLayout) holder.itemView;
         TextView textView = (TextView)root.findViewById(R.id.recyclerview_head_txt);
-        String showValue = String.valueOf(getItem(position).getSortLetters().charAt(0));
-        if ("$".equals(showValue)) {
-            textView.setText("群主");
-        } else if ("%".equals(showValue)) {
-            textView.setText("系统管理员");
-
-        } else {
-            textView.setText(showValue);
-        }
-
+//        String showValue = String.valueOf(getItem(position).getSortLetters().charAt(0));
+//        if ("$".equals(showValue)) {
+//            textView.setText("群主");
+//        } else if ("%".equals(showValue)) {
+//            textView.setText("系统管理员");
+//
+//        } else {
+//            textView.setText(showValue);
+//        }
+        textView.setText(getItem(position).getSortLetters());
     }
 
 
-    public int getPositionForSection(char section) {
+    public int getPositionForSectionById(long headId) {
+        for (int i = 0; i < getItemCount(); i++) {
+            long itemHeadId = mLists.get(i).getHeadId();
+            if(headId == itemHeadId){
+                return i;
+            }
+        }
+        return -1;
+
+    }
+
+    public int getPositionForSectionByName(String headName) {
         for (int i = 0; i < getItemCount(); i++) {
             String sortStr = mLists.get(i).getSortLetters();
-            char firstChar = sortStr.toUpperCase().charAt(0);
-            if (firstChar == section) {
+            String firstChar = sortStr.toUpperCase();
+            if (firstChar.equals(headName)) {
                 return i;
             }
         }
